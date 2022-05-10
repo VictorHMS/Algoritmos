@@ -1,0 +1,141 @@
+#include <stdio.h>
+#include <stdlib.h>
+#define mod 1000000007
+#define maxn 100002
+
+typedef struct delicia{
+    int ar[9];
+}delicia;
+
+delicia tree[4*maxn];
+int lazy[4*maxn];
+int n;
+int somad[9];
+//one based
+
+void init(){
+    int i, j;
+    for(i=0; i<4*maxn; i++){
+        lazy[i] = 0; //valor neutro
+        for(j=1; j<9; j++)tree[i].ar[j] = 0;
+        tree[i].ar[0] = 1;
+    }
+}
+
+void propagate(int pos, int l, int r){
+    int mid = (l+r)/2;
+    int esq = 2*pos;
+    int dir = esq+1;
+    int i;
+
+    if(lazy[pos] != 0){    
+        
+        int atua = lazy[pos];
+        for(i=0; i<9; i++){
+            somad[(i+atua)%9] = tree[pos].ar[i];
+        }
+        for(i=0; i<9; i++){
+            tree[pos].ar[i] = somad[i];
+        }
+        
+        if(l < r){
+            lazy[esq] += lazy[pos]; //depende do caso
+            lazy[dir] += lazy[pos]; 
+        }
+
+        lazy[pos] = 0;
+    }
+}
+
+void update(int pos, int l, int r, int L, int R, int val){
+    int mid = (l+r)/2;
+    int esq = 2*pos;
+    int dir = esq+1;
+    int i;
+
+    propagate(pos, l, r);
+
+    if(l>R || r<L)return;
+    if(l >= L && r <= R){
+        
+        int atua = val;
+        for(i=0; i<9; i++){
+            somad[(i+atua)%9] = tree[pos].ar[i];
+        }
+        for(i=0; i<9; i++){
+            tree[pos].ar[i] = somad[i];
+        }
+
+        if(l < r){
+            lazy[esq] += val; //depende do caso
+            lazy[dir] += val; //depende do caso
+        }
+    }else{
+        update(esq, l, mid, L, R, val);
+        update(dir, mid+1, r, L, R, val);
+
+        for(i=0; i<9; i++){
+            tree[pos].ar[i] = tree[esq].ar[i] + tree[dir].ar[i];
+        }
+    }
+}
+
+delicia query(int pos, int l, int r, int L, int R){
+    int mid = (l+r)/2;
+    int esq = 2*pos;
+    int dir = esq+1;
+    int i;
+
+    delicia limpo;// = delicia();
+    for(i=0; i<9; i++){
+        limpo.ar[i] = 0;
+    }
+
+    propagate(pos, l, r);
+    if(l>R || r<L)return limpo; //neutro depende do caso;
+    if(l >= L && r <= R)return tree[pos];
+    else{ 
+        delicia q1 = query(esq, l, mid, L, R); 
+        delicia q2 = query(dir, mid+1, r, L, R);
+        for(i=0; i<9; i++){
+            q1.ar[i] += q2.ar[i];
+        }
+        return q1;
+    } // depende do caso
+}
+
+int main(){
+    int t, i, j;
+    scanf("%d %d", &n, &t);
+
+    init();
+
+    for(i=0; i<n; i++){
+        update(1,0,n-1,i,i,1);
+    }
+
+    int a,b;
+    for(i=0; i<t; i++){
+        scanf("%d %d", &a, &b);// cin >> a >> b;
+        delicia atu = query(1,0,n-1,a,b);
+        int melhor = 0;
+        for(j=0; j<9; j++){
+            if(atu.ar[j] >= atu.ar[melhor]){
+                melhor = j;
+            }
+        }
+        update(1,0,n-1,a,b,melhor);
+    }
+    for(i=0; i<n; i++){
+        delicia atu = query(1,0,n-1,i,i);
+        int melhor = 0;
+        for(j=0; j<9; j++){
+            //cout << atu.ar[i] << " ";
+            if(atu.ar[j] >= atu.ar[melhor]){
+                melhor = j;
+            }
+        }
+        printf("%d\n",melhor);//cout << melhor << "\n";
+    }
+    return 0;
+}
